@@ -1,3 +1,31 @@
+.snap-container {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  height: 100%;
+  scroll-padding-top: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-section {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  min-height: calc(100vh - var(--header-height, 80px));
+  scroll-margin-top: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.parallax-section {
+  --parallax-offset: 0;
+  transform: translateZ(0) translateY(calc(var(--parallax-offset) * -32px));
+  transition: transform 1.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
 #root {
   max-width: 100%;
   margin: 0;
@@ -8,9 +36,11 @@
   font-family: var(--font-primary);
   color: var(--text-primary);
   background: radial-gradient(circle at 20% 20%, rgba(115, 245, 255, 0.08), transparent 45%), #02030a;
-  min-height: 100vh;
+  height: 100vh;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .background-aurora {
@@ -171,13 +201,24 @@ button {
 }
 
 .hero {
-  min-height: 95vh;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  padding: clamp(60px, 8vw, 140px) clamp(20px, 6vw, 80px);
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+}
+
+.hero-surface {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  align-items: center;
-  gap: clamp(40px, 8vw, 80px);
-  padding-top: clamp(60px, 8vw, 140px);
-  overflow: hidden;
+  gap: clamp(32px, 6vw, 80px);
 }
 
 .hero-grid {
@@ -190,7 +231,7 @@ button {
   background-size: 80px 80px;
   opacity: 0.2;
   mask-image: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.7) 25%, rgba(0, 0, 0, 0.7) 75%, transparent);
-  z-index: 0;
+  z-index: 1;
 }
 
 .hero-ambient {
@@ -200,6 +241,7 @@ button {
   filter: blur(60px);
   opacity: 0.4;
   border-radius: 50%;
+  z-index: 1;
 }
 
 .ambient-one {
@@ -216,7 +258,13 @@ button {
 
 .hero-content {
   position: relative;
-  z-index: 1;
+  z-index: 2;
+  max-width: 640px;
+  padding: clamp(24px, 4vw, 40px);
+  border-radius: 36px;
+  background: rgba(4, 7, 18, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
 }
 
 .eyebrow {
@@ -314,17 +362,29 @@ h1 {
 }
 
 .hero-visual {
-  min-height: 420px;
-  border-radius: 36px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: radial-gradient(circle at top, rgba(91, 245, 255, 0.2), transparent 60%);
-  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55);
-  overflow: hidden;
+  position: absolute;
+  inset: -12% -6%;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.75;
+  filter: saturate(1.05);
 }
 
 .hero-visual canvas {
   width: 100% !important;
   height: 100% !important;
+}
+
+.hero-side {
+  padding: clamp(24px, 3.5vw, 36px);
+  border-radius: 32px;
+  background: rgba(2, 5, 12, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
 .scroll-indicator {
@@ -716,6 +776,8 @@ textarea {
   position: relative;
   overflow: hidden;
   border-top: 1px solid rgba(255, 255, 255, 0.05);
+  align-items: center;
+  z-index: 1;
 }
 
 .footer-glow {
@@ -810,12 +872,13 @@ textarea {
     justify-content: center;
   }
 
-  .hero {
+  .hero-surface {
     grid-template-columns: 1fr;
   }
 
-  .hero-visual {
-    min-height: 360px;
+  .hero-content,
+  .hero-side {
+    padding: 24px;
   }
 }
 

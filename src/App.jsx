@@ -307,6 +307,88 @@ function App() {
     return () => window.removeEventListener('pointermove', handleMove)
   }, [])
 
+  useEffect(() => {
+    const sections = Array.from(document.querySelectorAll('.parallax-section'))
+    let isScrolling = false
+    let scrollTimeout = null
+
+    const handleParallax = () => {
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect()
+        const distance = rect.top + rect.height / 2 - window.innerHeight / 2
+        const normalized = Math.max(Math.min(distance / window.innerHeight, 1), -1)
+        section.style.setProperty('--parallax-offset', normalized.toString())
+      })
+    }
+
+    const smoothScrollTo = (targetElement, duration = 2500) => {
+      const targetPosition = targetElement.getBoundingClientRect().top + window.scrollY
+      const startPosition = window.scrollY
+      const distance = targetPosition - startPosition
+      let startTime = null
+
+      // Максимально плавная функция easing - ease-in-out-sine (самая плавная)
+      const easeInOutSine = (t) => {
+        return -(Math.cos(Math.PI * t) - 1) / 2
+      }
+
+      const animation = (currentTime) => {
+        if (startTime === null) startTime = currentTime
+        const timeElapsed = currentTime - startTime
+        const progress = Math.min(timeElapsed / duration, 1)
+        const ease = easeInOutSine(progress)
+
+        window.scrollTo({
+          top: startPosition + distance * ease,
+          behavior: 'auto' // Используем нашу кастомную анимацию
+        })
+
+        if (progress < 1) {
+          requestAnimationFrame(animation)
+        }
+      }
+
+      requestAnimationFrame(animation)
+    }
+
+    const handleAutoScroll = () => {
+      if (isScrolling) return
+
+      const windowHeight = window.innerHeight
+      const scrollThreshold = windowHeight * 0.1 // 10% экрана - очень чувствительный порог для раннего срабатывания
+
+      sections.forEach((section) => {
+        const rect = section.getBoundingClientRect()
+        const sectionTopInViewport = rect.top
+        const sectionBottomInViewport = rect.bottom
+
+        // Если следующая секция начала появляться внизу экрана (больше 10% видно)
+        if (sectionTopInViewport < windowHeight && sectionTopInViewport > -scrollThreshold && sectionBottomInViewport > scrollThreshold) {
+          isScrolling = true
+          smoothScrollTo(section, 2500) // Максимальная плавность - 2.5 секунды
+          clearTimeout(scrollTimeout)
+          scrollTimeout = setTimeout(() => {
+            isScrolling = false
+          }, 2800) // Увеличен timeout для завершения анимации
+          return // Обрабатываем только одну секцию за раз
+        }
+      })
+    }
+
+    handleParallax()
+    window.addEventListener('scroll', () => {
+      handleParallax()
+      handleAutoScroll()
+    }, { passive: true })
+    window.addEventListener('resize', handleParallax)
+    
+    return () => {
+      window.removeEventListener('scroll', handleParallax)
+      window.removeEventListener('resize', handleParallax)
+      clearTimeout(scrollTimeout)
+    }
+  }, [])
+
   const handleScrollToSection = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
@@ -343,8 +425,21 @@ function App() {
         </button>
       </header>
 
-      <main>
-      <section className="hero" id="hero">
+      <main className="snap-container">
+      <section className="hero snap-section parallax-section" id="hero">
+        <div className="hero-visual" aria-hidden="true">
+          <Canvas camera={{ position: [0, 0, 5], fov: 42 }}>
+            <Suspense fallback={null}>
+              <ambientLight intensity={0.6} />
+              <directionalLight position={[4, 4, 2]} intensity={1.2} />
+              <directionalLight position={[-4, -2, -2]} intensity={0.6} color="#0ff" />
+              <Stars radius={28} depth={40} count={4500} factor={2.6} fade speed={0.7} />
+              <FloatingOrb />
+              <HaloParticles />
+              <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.6} />
+            </Suspense>
+          </Canvas>
+        </div>
         <div
           className="hero-glow"
           style={{ transform: `translate3d(${parallax.x / 4}px, ${parallax.y / 4}px, 0)` }}
@@ -352,82 +447,75 @@ function App() {
         <div className="hero-grid" />
         <span className="hero-ambient ambient-one" />
         <span className="hero-ambient ambient-two" />
-        <Motion.div
-          className="hero-content"
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: 'easeOut' }}
-        >
-          <p className="eyebrow">Full-stack digital atelier · Web · Mobile · AI</p>
-          <h1>Премиальная разработка сайтов, приложений и Telegram-ботов</h1>
-          <p className="subtitle">
-            Разрабатываю SEO-оптимизированные сайты, SaaS и AI-ботов на React, Svelte, Django, Android и Telegram API.
-            Отвечаю за стратегию, UX, 3D-анимацию, backend, DevOps и аналитику, чтобы KPI были прозрачными уже на первом спринте.
-          </p>
-          <div className="hero-cta">
-            <button className="primary" onClick={handleScrollToContact}>
-              Оставить заявку
-            </button>
-            <button className="secondary" onClick={() => handleScrollToSection('services')}>
-              Смотреть компетенции
-            </button>
-          </div>
-          <div className="hero-tags">
-            <span>Современный стек</span>
-            <span>3D motion & micro-interactions</span>
-            <span>Data-driven решения</span>
-          </div>
-          <Motion.ul
-            className="hero-stats"
-            initial="hidden"
-            animate="visible"
-            variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
-          >
-            {heroStats.map((stat) => (
-              <Motion.li key={stat.label} variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}>
-                <span>{stat.label}</span>
-                <strong>{stat.value}</strong>
-                <p>{stat.detail}</p>
-              </Motion.li>
-            ))}
-          </Motion.ul>
+        <div className="hero-surface">
           <Motion.div
-            className="hero-floating-card"
+            className="hero-content"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: 'easeOut' }}
+          >
+            <p className="eyebrow">Full-stack digital atelier · Web · Mobile · AI</p>
+            <h1>Премиальная разработка сайтов, приложений и Telegram-ботов</h1>
+            <p className="subtitle">
+              Разрабатываю SEO-оптимизированные сайты, SaaS и AI-ботов на React, Svelte, Django, Android и Telegram API.
+              Отвечаю за стратегию, UX, 3D-анимацию, backend, DevOps и аналитику, чтобы KPI были прозрачными уже на первом спринте.
+            </p>
+            <div className="hero-cta">
+              <button className="primary" onClick={handleScrollToContact}>
+                Оставить заявку
+              </button>
+              <button className="secondary" onClick={() => handleScrollToSection('services')}>
+                Смотреть компетенции
+              </button>
+            </div>
+            <div className="hero-tags">
+              <span>Современный стек</span>
+              <span>3D motion & micro-interactions</span>
+              <span>Data-driven решения</span>
+            </div>
+          </Motion.div>
+          <Motion.div
+            className="hero-side"
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7 }}
+            transition={{ delay: 0.15, duration: 0.8 }}
           >
-            <p>Технологический стек</p>
-            <strong>React · SvelteKit · Django · FastAPI · Three.js · Telegram · GA4</strong>
-            <span>Полный цикл: стратегия → дизайн → код → DevOps → аналитика</span>
+            <Motion.ul
+              className="hero-stats"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
+            >
+              {heroStats.map((stat) => (
+                <Motion.li
+                  key={stat.label}
+                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
+                >
+                  <span>{stat.label}</span>
+                  <strong>{stat.value}</strong>
+                  <p>{stat.detail}</p>
+                </Motion.li>
+              ))}
+            </Motion.ul>
+            <Motion.div
+              className="hero-floating-card"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
+            >
+              <p>Технологический стек</p>
+              <strong>React · SvelteKit · Django · FastAPI · Three.js · Telegram · GA4</strong>
+              <span>Полный цикл: стратегия → дизайн → код → DevOps → аналитика</span>
+            </Motion.div>
           </Motion.div>
-        </Motion.div>
-
-        <Motion.div
-          className="hero-visual"
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1 }}
-        >
-          <Canvas camera={{ position: [0, 0, 5], fov: 45 }}>
-            <Suspense fallback={null}>
-              <ambientLight intensity={0.5} />
-              <directionalLight position={[4, 4, 2]} intensity={1.2} />
-              <directionalLight position={[-4, -2, -2]} intensity={0.6} color="#0ff" />
-              <Stars radius={20} depth={30} count={4000} factor={3} fade speed={1} />
-              <FloatingOrb />
-              <HaloParticles />
-              <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.8} />
-            </Suspense>
-          </Canvas>
-        </Motion.div>
+        </div>
         <div className="scroll-indicator">
           <span />
           <p>Scroll to explore</p>
         </div>
       </section>
 
-      <section className="value" id="value">
+      <section className="value snap-section parallax-section" id="value">
         <SectionTitle
           eyebrow="Signature подход"
           title="Почему выбирают меня"
@@ -460,7 +548,7 @@ function App() {
         </div>
       </section>
 
-      <section className="about" id="about">
+      <section className="about snap-section parallax-section" id="about">
         <SectionTitle
           eyebrow="Обо мне"
           title="Преимущества"
@@ -494,7 +582,7 @@ function App() {
         </div>
       </section>
 
-      <section className="services" id="services">
+      <section className="services snap-section parallax-section" id="services">
         <SectionTitle
           eyebrow="Услуги"
           title="Услуги"
@@ -528,7 +616,7 @@ function App() {
         </div>
       </section>
 
-      <section className="portfolio" id="portfolio">
+      <section className="portfolio snap-section parallax-section" id="portfolio">
         <SectionTitle
           eyebrow="Портфолио"
           title="Кейсы и доказанные метрики"
@@ -566,7 +654,7 @@ function App() {
         </div>
       </section>
 
-      <section className="cta-inline">
+      <section className="cta-inline snap-section parallax-section">
         <div className="cta-inline-card">
           <p className="eyebrow">White-glove сопровождение</p>
           <h3>Держу в работе максимум 2–3 проекта, чтобы лично контролировать эстетику, инженерию и метрики.</h3>
@@ -576,7 +664,7 @@ function App() {
         </div>
       </section>
 
-      <section className="pricing" id="pricing">
+      <section className="pricing snap-section parallax-section" id="pricing">
         <SectionTitle
           eyebrow="Прайсы"
           title="Цены"
@@ -606,7 +694,7 @@ function App() {
         </div>
       </section>
 
-      <section className="process" id="process">
+      <section className="process snap-section parallax-section" id="process">
         <SectionTitle
           eyebrow="Этапы работы"
           title="Этапы работы"
@@ -632,7 +720,7 @@ function App() {
         </div>
       </section>
 
-      <section className="faq" id="faq">
+      <section className="faq snap-section parallax-section" id="faq">
         <SectionTitle
           eyebrow="FAQ"
           title="Частые вопросы"
@@ -649,7 +737,7 @@ function App() {
         </div>
       </section>
 
-      <section className="contact" id="contact">
+      <section className="contact snap-section parallax-section" id="contact">
         <SectionTitle
           eyebrow="Контакты"
           title="Контакты"
@@ -696,9 +784,7 @@ function App() {
         </div>
       </section>
 
-      </main>
-
-      <footer className="site-footer">
+      <footer className="site-footer snap-section parallax-section">
         <div className="footer-glow" />
         <p>
           © {new Date().getFullYear()} Архипов Даниил · Digital engineering, web, mobile, AI и SEO сопровождение.
@@ -710,6 +796,8 @@ function App() {
           <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
         </div>
       </footer>
+
+      </main>
     </div>
   )
 }
