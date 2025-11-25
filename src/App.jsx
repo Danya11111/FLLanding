@@ -4,199 +4,210 @@ import { Float, MeshDistortMaterial, OrbitControls, Stars } from '@react-three/d
 import { motion as Motion } from 'framer-motion'
 import './App.css'
 
+const CONTACT = {
+  telegramUrl: 'https://t.me/arhi_pov',
+  telegramHandle: '@arhi_pov',
+  email: 'daniil.arhipov.2005@gmail.com'
+}
+
 const heroStats = [
-  { label: 'Экспертиза', value: '10+ лет', detail: 'Web • Mobile • AI' },
-  { label: 'Скорость запуска', value: '2–4 недели', detail: 'от брифа до релиза' },
-  { label: 'Рост показателей', value: 'до +38%', detail: 'трафик и конверсия' }
+  { label: 'Премиальные релизы', value: '48+ проектов', detail: 'лендинги · сервисы · AI' },
+  { label: 'Средний ROI', value: 'x3.4', detail: 'конверсия · LTV · повторные продажи' },
+  { label: 'Time-to-market', value: '3–5 недель', detail: 'vision → production' },
+  { label: 'Уровень сервиса', value: 'NPS 9.6', detail: 'SLA 99.9% · white-glove' }
+]
+
+const signatureHighlights = [
+  {
+    title: 'Сценография интерфейсов',
+    description:
+      'Создаю визуальные истории с мягким светом, volumetric glow, 3D-блобами и подвижной типографикой.',
+    metric: 'Art direction · Motion · Micro-interactions'
+  },
+  {
+    title: 'Product leadership',
+    description:
+      'Веду продукт от гипотезы до релиза: стратегия, UX, аналитика, SLA, roadmap в Notion/Jira, прозрачные KPI.',
+    metric: 'Vision · Roadmap · SLA · KPI'
+  },
+  {
+    title: 'AI-native engineering',
+    description:
+      'Связываю Tilda, React/SvelteKit, Django/FastAPI, Kotlin и AI-стек в единый pipeline с DevOps и observability.',
+    metric: 'Tilda · React · Svelte · Django · Telegram · GA4'
+  }
 ]
 
 const services = [
   {
-    title: 'Сайты на Tilda',
-    description: 'Премиальные лендинги и каталоги с кастомной логикой.',
-    bullets: ['Zero-block, эффекты, 3D', 'SEO + скорость 90+', 'Интеграции CRM/метрика']
+    title: 'Signature лендинги и спецпроекты',
+    description:
+      'Создаю digital-витрины с depth lighting, кастомным WebGL, zero-block логикой и скоростью загрузки 90+.',
+    bullets: [
+      'Hero-сцены с 3D и motion-дирекцией',
+      'Core Web Vitals 90+ / SEO-ready',
+      'CRM, оплаты, мультиязычность, аналитика'
+    ]
   },
   {
-    title: 'Svelte + Django + MySQL',
-    description: 'Кастомные продукты, CRM, сервисы и порталы.',
-    bullets: ['Svelte front + Django API', 'Масштабируемая архитектура', 'CI/CD, облако, безопасность']
+    title: 'Product engineering / SaaS',
+    description:
+      'SvelteKit/React фронтенд и Django/FastAPI backend. Личные кабинеты, CRM, маркетплейсы, BI-интерфейсы.',
+    bullets: ['Модульная архитектура и дизайн-системы', 'CI/CD, observability, ролевая модель', 'Postgres, Redis, cloud']
   },
   {
-    title: 'SEO и аналитика',
-    description: 'Точные данные, прозрачная аналитика и рост органики.',
-    bullets: ['GA4, Метрика, BigQuery', 'SEO-аудит и тех.правки', 'Скорость, структура, контент']
+    title: 'AI · Telegram · RAG',
+    description:
+      'AI-ассистенты с RAG, мультиязычной модерацией, платежами и аналитикой внутри Telegram, Web или приложений.',
+    bullets: ['OpenAI, Claude, Llama, векторные БД', 'Guardrails, контекст, обучение', 'Оплаты, роли, админки']
   },
   {
-    title: 'Telegram-боты, AI и RAG',
-    description: 'Умные ассистенты, продажи, поддержка и интеграции.',
-    bullets: ['GPT, Claude, RAG', 'Оплаты, CRM, вебхуки', 'Свой UI, админки, роли']
+    title: 'Mobile & field apps',
+    description:
+      'Jetpack Compose и SwiftUI MVP/enterprise приложения с офлайн режимами, BLE, GPS и интеграцией с ERP.',
+    bullets: ['Native design system и UX-паттерны', 'CI, релизы в сторах, crash-free 99%', 'Мониторинг и поддержка']
   },
   {
-    title: 'Android-разработка',
-    description: 'Нативные приложения с офлайн логикой и API.',
-    bullets: ['Jetpack Compose', 'GPS, камера, BLE', 'Публикация и поддержка']
+    title: 'Data · SEO · Growth',
+    description:
+      'Настраиваю data-layer, GA4/BigQuery, строю финансовые модели, отчёты и стратегию органики с четкими KPI.',
+    bullets: ['Техаудит, скорость, структура', 'End-to-end аналитика и BI', 'Power Query, Python, Looker Studio']
   },
   {
-    title: 'Аналитика и Excel-модели',
-    description: 'Финансовые модели, отчеты, автоматизация процессов.',
-    bullets: ['Power Query, VBA', 'Дэшборды под ключ', 'Сценарное моделирование']
-  },
-  {
-    title: 'Программирование и интеграции',
-    description: 'Python, C++, Java, Kotlin — решаю сложные задачи.',
-    bullets: ['API/ETL/микросервисы', 'Парсеры и скрипты', 'Интеграции ERP/CRM']
+    title: 'Infrastructure & DevOps',
+    description:
+      'Оркеструю ERP/CRM, собираю ETL, автоматизирую деплой, безопасность, логирование и алерты по SLA.',
+    bullets: ['API orchestration и интеграции', 'Docker, Kubernetes, Terraform', 'Observability, on-call, runbooks']
   }
 ]
 
+const buildMediaSet = (baseUrl, altText) => ({
+  alt: altText,
+  avif: `${baseUrl}?auto=format&fit=crop&w=1400&q=80&fm=avif`,
+  webp: `${baseUrl}?auto=format&fit=crop&w=1400&q=80&fm=webp`,
+  fallback: `${baseUrl}?auto=format&fit=crop&w=1400&q=80&fm=jpg`
+})
+
 const portfolio = [
   {
-    title: 'Tilda / digital-ритейл',
-    description: 'Лендинг с 3D-анимацией, Zero-block и связкой с CRM.',
-    result: '+42% к заявкам',
-    image: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=1000&q=80'
+    title: 'Digital retail · Tilda',
+    description: 'Флагманский лендинг с volumetric hero, WebGL-сценой и динамическим каталогом SKU.',
+    result: '+42% к конверсии за 2 недели',
+    media: buildMediaSet(
+      'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a',
+      'Динамический лендинг для digital-ретейла с кастомным WebGL'
+    )
   },
   {
-    title: 'Django веб-сервис',
-    description: 'Система управления логистикой + личные кабинеты.',
-    result: '99.98% uptime',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1000&q=80'
+    title: 'Logistics OS · Django',
+    description: 'Единый портал с личными кабинетами, картой заказов и SLA-алертами в реальном времени.',
+    result: '99.98% uptime · 4 региона',
+    media: buildMediaSet(
+      'https://images.unsplash.com/photo-1460925895917-afdab827c52f',
+      'Панель для логистики на Django с реальными метриками SLA'
+    )
   },
   {
-    title: 'AI Telegram-бот',
-    description: 'RAG-помощник для службы поддержки с памятью контекста.',
-    result: '-60% нагрузка на операторов',
-    image: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1000&q=80'
+    title: 'AI assistant · Telegram',
+    description: 'RAG-бот с модерацией, обучением на контенте и платежами в чате. Снимает нагрузку с поддержки.',
+    result: '-60% обращений в helpdesk',
+    media: buildMediaSet(
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
+      'Интерфейс AI-бота в Telegram с премиальным UI'
+    )
   },
   {
-    title: 'Android-приложение',
-    description: 'MVP сервиса доставки с GPS-трекингом и офлайн режимом.',
+    title: 'Last-mile app · Android',
+    description: 'MVP с GPS-трекингом, офлайн маршрутами, BLE и интеграцией с ERP/CRM.',
     result: 'релиз за 6 недель',
-    image: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=1000&q=80'
+    media: buildMediaSet(
+      'https://images.unsplash.com/photo-1498050108023-c5249f4df085',
+      'Android-приложение для курьеров с трекингом доставок'
+    )
   }
 ]
 
 const pricing = [
   {
-    title: 'Сайты на Tilda',
+    title: 'Signature сайты',
     accent: 'aqua',
     items: [
-      { label: 'Лендинг', price: '23 500 – 33 000 ₽' },
-      { label: 'Многостраничный сайт', price: '38 000 – 52 000 ₽' },
-      { label: 'Корпоративный сайт', price: '57 000 – 76 000 ₽' },
-      { label: 'Каталог', price: '42 500 – 57 000 ₽' },
-      { label: 'Редизайн', price: '1 150 – 1 700 ₽/час' },
-      { label: 'Поддержка', price: '7 600 – 11 400 ₽' }
+      { label: 'Hero-лендинг / спецпроект', price: '35 000 – 55 000 ₽' },
+      { label: 'Каталог / eCom', price: '55 000 – 78 000 ₽' },
+      { label: 'Корпоративный портал', price: '75 000 – 110 000 ₽' },
+      { label: 'Арт-дирекшн / редизайн', price: '1 600 – 2 100 ₽/час' }
     ]
   },
   {
-    title: 'Svelte/Django',
+    title: 'Product engineering',
     accent: 'violet',
     items: [
-      { label: 'Веб-приложение', price: '57 000 – 76 000 ₽' },
-      { label: 'Личный кабинет / CRM', price: '85 500 – 114 000 ₽' },
-      { label: 'Веб-сервис', price: '142 500 – 209 000 ₽' },
-      { label: 'Backend API', price: '28 500 – 47 500 ₽' },
-      { label: 'Интеграции', price: '14 250 – 28 500 ₽' },
-      { label: 'Деплой', price: '9 500 – 19 000 ₽' }
+      { label: 'Web-приложение / SaaS', price: '95 000 – 165 000 ₽' },
+      { label: 'Личный кабинет / CRM', price: '120 000 – 210 000 ₽' },
+      { label: 'Backend + API', price: '48 000 – 88 000 ₽' },
+      { label: 'DevOps / деплой', price: '18 000 – 34 000 ₽' }
     ]
   },
   {
-    title: 'SEO / Аналитика',
-    accent: 'amber',
-    items: [
-      { label: 'SEO-аудит', price: '9 500 – 14 250 ₽' },
-      { label: 'Тех. SEO', price: '14 250 – 23 750 ₽' },
-      { label: 'SEO на Tilda', price: '7 600 – 11 400 ₽' },
-      { label: 'Скорость', price: '5 700 – 9 500 ₽' },
-      { label: 'Метрика / GA4', price: '4 750 – 7 600 ₽' },
-      { label: 'Вебмастер', price: '1 900 – 2 850 ₽' },
-      { label: 'События', price: '5 700 – 9 500 ₽' },
-      { label: 'Дашборды', price: '9 500 – 19 000 ₽' }
-    ]
-  },
-  {
-    title: 'Telegram-боты',
+    title: 'AI · Telegram · RAG',
     accent: 'cyan',
     items: [
-      { label: 'Простой', price: '14 250 – 23 750 ₽' },
-      { label: 'Админка / CRM', price: '28 500 – 47 500 ₽' },
-      { label: 'AI', price: '38 000 – 66 500 ₽' },
-      { label: 'RAG', price: '66 500 – 114 000 ₽' },
-      { label: 'Оплаты', price: '9 500 – 19 000 ₽' }
+      { label: 'Smart-бот с админкой', price: '45 000 – 82 000 ₽' },
+      { label: 'AI ассистент / RAG', price: '68 000 – 125 000 ₽' },
+      { label: 'Интеграции и оплаты', price: '22 000 – 48 000 ₽' }
     ]
   },
   {
-    title: 'Android',
-    accent: 'pink',
+    title: 'SEO · Data advisory',
+    accent: 'amber',
     items: [
-      { label: 'GPS', price: '57 000 – 85 500 ₽' },
-      { label: 'Фото', price: '47 500 – 76 000 ₽' },
-      { label: 'Клиент API', price: '66 500 – 114 000 ₽' },
-      { label: 'MVP', price: '95 000 – 171 000 ₽' },
-      { label: 'Публикация', price: '4 750 – 9 500 ₽' }
-    ]
-  },
-  {
-    title: 'Аналитика / Excel',
-    accent: 'lime',
-    items: [
-      { label: 'Модель', price: '9 500 – 19 000 ₽' },
-      { label: 'Автоматизация', price: '4 750 – 11 400 ₽' },
-      { label: 'Большой Excel', price: '5 700 – 14 250 ₽' },
-      { label: 'Статистика', price: '11 400 – 19 000 ₽' }
-    ]
-  },
-  {
-    title: 'Программирование',
-    accent: 'blue',
-    items: [
-      { label: 'Скрипт', price: '7 600 – 14 250 ₽' },
-      { label: 'Парсер', price: '14 250 – 28 500 ₽' },
-      { label: 'Интеграция', price: '19 000 – 38 000 ₽' },
-      { label: 'Алгоритмы', price: '9 500 – 19 000 ₽' },
-      { label: 'Консультация', price: '1 425 ₽/час' }
+      { label: 'SEO-аудит + дорожная карта', price: '18 000 – 32 000 ₽' },
+      { label: 'Data layer / GA4 / BigQuery', price: '12 000 – 28 000 ₽' },
+      { label: 'Дэшборды и модели', price: '16 000 – 34 000 ₽' },
+      { label: 'Сопровождение', price: '9 500 – 14 500 ₽/мес' }
     ]
   }
 ]
 
 const steps = [
-  { title: 'Созвон', detail: 'Уточняем задачу, KPI и сроки. 30 минут по делу.' },
-  { title: 'Аналитика', detail: 'Исследование ниши, пользователей, данных.' },
-  { title: 'Прототип', detail: 'Сценарии, CJM, дизайн-концепт, согласование.' },
-  { title: 'Разработка', detail: 'Фронтенд, бэкенд, нейросети, интеграции.' },
-  { title: 'Тестирование', detail: 'QA, нагрузка, безопасность, SEO.' },
-  { title: 'Публикация', detail: 'Деплой, сторы, домены, документация.' },
-  { title: 'Поддержка', detail: 'Мониторинг, аналитика, доработки.' }
+  { title: 'Vision call', detail: 'Диагностика контекста, артефактов и KPI. Формируем гипотезы и ожидания по тональности.' },
+  {
+    title: 'Discovery sprint',
+    detail: 'Интервью, CJM, data review, выбор референсов, структура продукта и дорожная карта в Notion.'
+  },
+  {
+    title: 'Design system',
+    detail: 'Moodboards, типографика, 3D/анимации, интерактивные прототипы во Figma. Утверждаем визуальную систему.'
+  },
+  { title: 'Development', detail: 'Фронтенд, backend, AI, интеграции, настройки DevOps и окружений.' },
+  { title: 'Quality & launch', detail: 'QA, перформанс, безопасность, SEO/data layer, релиз и поддержка.' },
+  { title: 'Growth care', detail: 'Мониторинг, отчёты, A/B-тесты, сопровождение команды и итеративные релизы.' }
 ]
 
 const faq = [
   {
-    q: 'Как быстро стартуем?',
-    a: 'Созвон и диагностика в течение 24 часов. После согласования брифа начинаю прототип сразу.'
+    q: 'Как быстро можно стартовать?',
+    a: 'Первый созвон — в течение 12–24 часов. После брифа отправляю vision deck и дорожную карту на первую неделю.'
   },
   {
-    q: 'Что с юридическими вопросами?',
-    a: 'Работаю по договору, актам и безналу/РФ. Возможны NDA и доступы через VPN.'
+    q: 'Как проходить юридию и оплату?',
+    a: 'Договор/оферта, NDA, безнал/USDT. Все доступы через VPN и менеджер паролей, код — в приватных репозиториях.'
   },
   {
-    q: 'Можно ли подключить мою команду?',
-    a: 'Да. Организую прозрачный процесс в Notion/Jira, синхронизируюсь с дизайнерами и маркетингом.'
+    q: 'Можно подключить вашу команду?',
+    a: 'Да. Встраиваю дизайнеров, маркетинг и аналитиков заказчика, веду единый backlog, ретро и weekly демо.'
   },
   {
-    q: 'Есть ли гарантия на проекты?',
-    a: 'Техническая гарантия 60 дней, мониторинг и быстрые фиксы. Для Tilda и ботов — SLA по договору.'
+    q: 'Какой стек используете чаще?',
+    a: 'Tilda Zero Block, React/SvelteKit, Django/FastAPI, Postgres, Telegram API, OpenAI/Claude, GA4/BigQuery, Docker.'
   },
   {
-    q: 'Как работает AI/RAG блок?',
-    a: 'Настраиваю pipeline: сбор данных, векторное хранилище, промт-дизайн, защиту от утечек и панель модерации.'
+    q: 'Что с гарантией и поддержкой?',
+    a: '60 дней тех. гарантии + SLA на критические инциденты. Мониторинг, алерты и быстрые фиксы входят в сопровождение.'
   },
   {
-    q: 'Что по рассрочке и этапам?',
-    a: 'Плачу проект на этапы 40/40/20 или ежемесячные спринты — прозрачно фиксирую результат каждого шага.'
-  },
-  {
-    q: 'Поддержка после релиза обязательна?',
-    a: 'Нет, но рекомендую. Есть тарифы на сопровождение, мониторинг и доработки по гибкой ставке.'
+    q: 'Работаете ли спринтами?',
+    a: 'Да, фиксирую результат каждого спринта, прозрачные отчёты и метрики. Популярный формат — 2-недельные итерации.'
   }
 ]
 
@@ -241,23 +252,49 @@ const HaloParticles = () => {
   )
 }
 
-const SectionTitle = ({ eyebrow, title, description }) => (
-  <Motion.div
-    className="section-heading"
-    initial={{ opacity: 0, y: 30 }}
-    whileInView={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.6 }}
-    viewport={{ once: true, amount: 0.4 }}
-  >
-    <p className="eyebrow">{eyebrow}</p>
-    <h2>{title}</h2>
-    {description && <p className="section-description">{description}</p>}
-  </Motion.div>
-)
+const SectionTitle = ({ eyebrow, title, description, level = 'h2' }) => {
+  const HeadingTag = level
+
+  return (
+    <Motion.div
+      className="section-heading"
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      viewport={{ once: true, amount: 0.4 }}
+    >
+      <p className="eyebrow">{eyebrow}</p>
+      <HeadingTag>{title}</HeadingTag>
+      {description && <p className="section-description">{description}</p>}
+    </Motion.div>
+  )
+}
 
 function App() {
   const [parallax, setParallax] = useState({ x: 0, y: 0 })
   const [formMessage, setFormMessage] = useState('')
+  const stackBadges = [
+    'Tilda Zero Block',
+    'SvelteKit',
+    'React',
+    'Django',
+    'FastAPI',
+    'Postgres',
+    'MySQL',
+    'Telegram API',
+    'OpenAI',
+    'Claude',
+    'Three.js',
+    'Framer Motion',
+    'GA4',
+    'BigQuery',
+    'Docker',
+    'Yandex Cloud',
+    'AWS',
+    'Notion',
+    'Jira',
+    'Jetpack Compose'
+  ]
 
   useEffect(() => {
     const handleMove = (event) => {
@@ -270,9 +307,11 @@ function App() {
     return () => window.removeEventListener('pointermove', handleMove)
   }, [])
 
-  const handleScrollToContact = () => {
-    document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })
+  const handleScrollToSection = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  const handleScrollToContact = () => handleScrollToSection('contact')
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -282,13 +321,21 @@ function App() {
 
   return (
     <div className="app">
+      <div className="background-aurora">
+        <span className="aurora aurora-one" />
+        <span className="aurora aurora-two" />
+      </div>
       <header className="site-header">
-        <div className="logo">Архипов Даниил</div>
-        <nav>
+        <div className="logo">
+          <span>Архипов Даниил</span>
+          <small>digital architect</small>
+        </div>
+        <nav aria-label="Основная навигация">
+          <a href="#value">Подход</a>
           <a href="#services">Услуги</a>
-          <a href="#portfolio">Портфолио</a>
-          <a href="#pricing">Прайсы</a>
-          <a href="#process">Этапы</a>
+          <a href="#portfolio">Проекты</a>
+          <a href="#pricing">Стоимость</a>
+          <a href="#process">Процесс</a>
           <a href="#faq">FAQ</a>
         </nav>
         <button className="ghost-button" onClick={handleScrollToContact}>
@@ -296,30 +343,39 @@ function App() {
         </button>
       </header>
 
+      <main>
       <section className="hero" id="hero">
         <div
           className="hero-glow"
           style={{ transform: `translate3d(${parallax.x / 4}px, ${parallax.y / 4}px, 0)` }}
         />
         <div className="hero-grid" />
+        <span className="hero-ambient ambient-one" />
+        <span className="hero-ambient ambient-two" />
         <Motion.div
           className="hero-content"
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
         >
-          <p className="eyebrow">IT · WEB · AI · MOBILE</p>
-          <h1>Создаю сайты, ботов и приложения, которые выделяются</h1>
+          <p className="eyebrow">Full-stack digital atelier · Web · Mobile · AI</p>
+          <h1>Премиальная разработка сайтов, приложений и Telegram-ботов</h1>
           <p className="subtitle">
-            Web, мобильная разработка, AI-боты, SEO, сложные сервисы. Профессионально. Честно. Под ключ.
+            Разрабатываю SEO-оптимизированные сайты, SaaS и AI-ботов на React, Svelte, Django, Android и Telegram API.
+            Отвечаю за стратегию, UX, 3D-анимацию, backend, DevOps и аналитику, чтобы KPI были прозрачными уже на первом спринте.
           </p>
           <div className="hero-cta">
             <button className="primary" onClick={handleScrollToContact}>
               Оставить заявку
             </button>
-            <button className="secondary" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}>
-              Показать компетенции
+            <button className="secondary" onClick={() => handleScrollToSection('services')}>
+              Смотреть компетенции
             </button>
+          </div>
+          <div className="hero-tags">
+            <span>Современный стек</span>
+            <span>3D motion & micro-interactions</span>
+            <span>Data-driven решения</span>
           </div>
           <Motion.ul
             className="hero-stats"
@@ -335,6 +391,16 @@ function App() {
               </Motion.li>
             ))}
           </Motion.ul>
+          <Motion.div
+            className="hero-floating-card"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+          >
+            <p>Технологический стек</p>
+            <strong>React · SvelteKit · Django · FastAPI · Three.js · Telegram · GA4</strong>
+            <span>Полный цикл: стратегия → дизайн → код → DevOps → аналитика</span>
+          </Motion.div>
         </Motion.div>
 
         <Motion.div
@@ -355,13 +421,50 @@ function App() {
             </Suspense>
           </Canvas>
         </Motion.div>
+        <div className="scroll-indicator">
+          <span />
+          <p>Scroll to explore</p>
+        </div>
+      </section>
+
+      <section className="value" id="value">
+        <SectionTitle
+          eyebrow="Signature подход"
+          title="Почему выбирают меня"
+          description="Совмещаю арт-дирекшн, инженерию и SEO-аналитику: сайты и приложения выглядят премиально, загружаются быстрее конкурентов и стабильно приводят органический трафик."
+        />
+        <div className="value-grid">
+          {signatureHighlights.map((item) => (
+            <Motion.article
+              key={item.title}
+              className="value-card"
+              whileHover={{ y: -12 }}
+              transition={{ type: 'spring', stiffness: 160, damping: 16 }}
+            >
+              <div>
+                <p className="eyebrow">{item.metric}</p>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </div>
+            </Motion.article>
+          ))}
+        </div>
+        <div className="stack-marquee" aria-label="Tech stack">
+          <div className="marquee-track">
+            {[...stackBadges, ...stackBadges].map((badge, index) => (
+              <span key={`${badge}-${index}`} className="marquee-item">
+                {badge}
+              </span>
+            ))}
+          </div>
+        </div>
       </section>
 
       <section className="about" id="about">
         <SectionTitle
           eyebrow="Обо мне"
-          title="Tilda, Svelte, Django, Android, Python, AI-боты, аналитика, интеграции."
-          description="Занимаюсь сложными продуктами и цифровыми экосистемами. Собираю стек под задачу, страхую риски и держу KPI."
+          title="Преимущества"
+          description="9 лет развиваю цифровые продукты: от лендингов и SaaS до RAG-ботов и мобильных приложений. Беру ответственность за Core Web Vitals, SEO и бизнес-метрики."
         />
         <div className="about-grid">
           <Motion.div
@@ -370,7 +473,7 @@ function App() {
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           >
             <h3>Фокус</h3>
-            <p>Создаю премиальные цифровые продукты: от лендингов и бот-ассистентов до сервисов с backend и мобильными клиентами.</p>
+            <p>Signature-лендинги, продуктовые сервисы, мобильные клиенты, Telegram-боты, AI-ассистенты и инфраструктура под них с Core Web Vitals 90+.</p>
           </Motion.div>
           <Motion.div
             className="about-card"
@@ -378,7 +481,7 @@ function App() {
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           >
             <h3>Инструменты</h3>
-            <p>Svelte, React, Django, FastAPI, Python, Kotlin, GA4, BigQuery, Postgres, Tilda, Telegram API, OpenAI, Claude.</p>
+            <p>Svelte, React, Django, FastAPI, Python, Kotlin, Tilda, Telegram API, OpenAI/Claude, GA4, BigQuery, Docker, Yandex Cloud.</p>
           </Motion.div>
           <Motion.div
             className="about-card"
@@ -386,7 +489,7 @@ function App() {
             transition={{ type: 'spring', stiffness: 200, damping: 20 }}
           >
             <h3>Подход</h3>
-            <p>Делаю прозрачные дорожные карты, работаю спринтами, подключаю trusted-партнеров и закрываю вопросы по аналитике, SEO и DevOps.</p>
+            <p>Задаю продуктовый roadmap, подключаю команду заказчика, фиксирую метрики и веду прозрачную коммуникацию в Notion/Jira.</p>
           </Motion.div>
         </div>
       </section>
@@ -394,8 +497,8 @@ function App() {
       <section className="services" id="services">
         <SectionTitle
           eyebrow="Услуги"
-          title="7 продуктовых направлений"
-          description="Каждый сегмент включает проработку стратегии, дизайн, разработку, QA, аналитику и поддержку."
+          title="Услуги"
+          description="Каждый сервис закрываю под ключ: аудит, UX/UI, front/back, инфраструктуру, AI и сопровождение. Включаю SEO, Core Web Vitals и аналитику сразу."
         />
         <div className="services-grid">
           {services.map((service) => (
@@ -428,8 +531,9 @@ function App() {
       <section className="portfolio" id="portfolio">
         <SectionTitle
           eyebrow="Портфолио"
-          title="Цифровые продукты и кейсы"
-          description="Визуалы заглушены mock-форматами. В реальных проектах использую кастомные 3D-сцены, съемку и брендовые ассеты."
+          title="Кейсы и доказанные метрики"
+          description="Полные материалы по NDA показываю на созвоне. Ниже — выдержка кейсов с открытыми цифрами."
+          level="h3"
         />
         <div className="portfolio-grid">
           {portfolio.map((project) => (
@@ -439,7 +543,17 @@ function App() {
               whileHover={{ rotateX: -2, rotateY: 2, y: -6 }}
               transition={{ type: 'spring', stiffness: 120, damping: 12 }}
             >
-              <div className="portfolio-image" style={{ backgroundImage: `url(${project.image})` }} />
+              <picture className="portfolio-image">
+                <source type="image/avif" srcSet={project.media.avif} />
+                <source type="image/webp" srcSet={project.media.webp} />
+                <img
+                  src={project.media.fallback}
+                  alt={project.media.alt}
+                  loading="lazy"
+                  width="640"
+                  height="360"
+                />
+              </picture>
               <div className="portfolio-info">
                 <div>
                   <h3>{project.title}</h3>
@@ -452,11 +566,21 @@ function App() {
         </div>
       </section>
 
+      <section className="cta-inline">
+        <div className="cta-inline-card">
+          <p className="eyebrow">White-glove сопровождение</p>
+          <h3>Держу в работе максимум 2–3 проекта, чтобы лично контролировать эстетику, инженерию и метрики.</h3>
+          <button className="primary" onClick={handleScrollToContact}>
+            Забронировать слот
+          </button>
+        </div>
+      </section>
+
       <section className="pricing" id="pricing">
         <SectionTitle
           eyebrow="Прайсы"
-          title="Стоимость на 5% ниже рынка"
-          description="Финальные бюджеты фиксируются после брифа. Включаю анализ, дизайн, разработку, тестирование и релиз."
+          title="Цены"
+          description="Финальный бюджет фиксирую после брифа. Включаю исследование, дизайн, разработку, QA, релиз, SEO-настройки и сопровождение."
         />
         <div className="pricing-grid">
           {pricing.map((group) => (
@@ -485,8 +609,8 @@ function App() {
       <section className="process" id="process">
         <SectionTitle
           eyebrow="Этапы работы"
-          title="Прозрачная дорожная карта"
-          description="Трекинг в Notion + Jira. Каждая стадия подтверждается демо, аналитикой и чек-листами."
+          title="Этапы работы"
+          description="Обновляю артефакты в Notion/Jira и фиксирую KPI на каждом этапе. Результат каждого спринта — проверяемая метрика."
         />
         <div className="process-timeline">
           {steps.map((step, index) => (
@@ -511,8 +635,9 @@ function App() {
       <section className="faq" id="faq">
         <SectionTitle
           eyebrow="FAQ"
-          title="Вопросы и ответы"
-          description="Если не нашли ответа — напишите в форму ниже, и я быстро включусь в проект."
+          title="Частые вопросы"
+          description="Ответы на популярные вопросы про формат сотрудничества, оплату и стек."
+          level="h3"
         />
         <div className="faq-grid">
           {faq.map((item) => (
@@ -527,26 +652,26 @@ function App() {
       <section className="contact" id="contact">
         <SectionTitle
           eyebrow="Контакты"
-          title="Готов подключиться"
-          description="Заполните форму, укажите задачу, дайте ссылку на бриф или прототип — предложу архитектуру и оценку в течение 24 часов."
+          title="Контакты"
+          description="Оставьте ссылку, KPI и сроки. В течение дня вернусь с гипотезой, стеком и диапазоном бюджета."
         />
         <div className="contact-grid">
           <div className="contact-card">
-            <p>Оставьте заявку — отвечу лично, без менеджеров.</p>
+            <p>Лично веду коммуникацию, подключаюсь в Telegram/Slack/Teams и синхронизируюсь по вашему часовому поясу.</p>
             <ul>
               <li>
                 <span>Telegram</span>
-                <a href="https://t.me/arkhipovdan" target="_blank" rel="noreferrer">
-                  @arkhipovdan
+                <a href={CONTACT.telegramUrl} target="_blank" rel="noreferrer">
+                  {CONTACT.telegramHandle}
                 </a>
               </li>
               <li>
                 <span>Email</span>
-                <a href="mailto:hello@arkhipov.dev">hello@arkhipov.dev</a>
+                <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
               </li>
               <li>
                 <span>Часовой пояс</span>
-                <p>UTC+3 (Москва) · работаю с клиентами по всему миру</p>
+                <p>UTC+3 (Москва) · подключаюсь к клиентам по всему миру</p>
               </li>
             </ul>
           </div>
@@ -571,14 +696,21 @@ function App() {
         </div>
       </section>
 
+      </main>
+
       <footer className="site-footer">
         <div className="footer-glow" />
-        <p>© {new Date().getFullYear()} Архипов Даниил. Разработка премиальных цифровых продуктов.</p>
-        <div>
-          <span>Web · Mobile · AI · Data</span>
+        <p>
+          © {new Date().getFullYear()} Архипов Даниил · Digital engineering, web, mobile, AI и SEO сопровождение.
+        </p>
+        <div className="footer-links">
+          <a href={CONTACT.telegramUrl} target="_blank" rel="noreferrer">
+            {CONTACT.telegramHandle}
+          </a>
+          <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a>
         </div>
       </footer>
-      </div>
+    </div>
   )
 }
 
