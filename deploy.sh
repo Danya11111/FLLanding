@@ -197,6 +197,17 @@ if [ "$USE_COMPOSE" = true ]; then
     log_info "Остановка старых контейнеров..."
     $COMPOSE_CMD down 2>/dev/null || true
     
+    # Принудительное удаление контейнеров, если они существуют (на случай, если созданы не через compose)
+    log_info "Проверка и удаление существующих контейнеров..."
+    if docker ps -a --format '{{.Names}}' | grep -q "^fllanding$"; then
+        log_info "Удаление существующего контейнера fllanding..."
+        docker rm -f fllanding 2>/dev/null || true
+    fi
+    if docker ps -a --format '{{.Names}}' | grep -q "^nginx-proxy$"; then
+        log_info "Удаление существующего контейнера nginx-proxy..."
+        docker rm -f nginx-proxy 2>/dev/null || true
+    fi
+    
     # Сборка образа
     if [ "$SKIP_BUILD" = false ]; then
         log_info "Сборка образов через docker-compose..."

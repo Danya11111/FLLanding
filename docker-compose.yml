@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Nginx Reverse Proxy - принимает все запросы на порту 80
   nginx-proxy:
