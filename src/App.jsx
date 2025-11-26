@@ -1,7 +1,6 @@
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState, useMemo, useCallback, memo, lazy } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Float, MeshDistortMaterial, OrbitControls, Stars } from '@react-three/drei'
-import { motion as Motion } from 'framer-motion'
+import { Float, MeshDistortMaterial, Stars } from '@react-three/drei'
 import './App.css'
 
 const CONTACT = {
@@ -211,69 +210,119 @@ const faq = [
   }
 ]
 
-const FloatingOrb = () => (
-  <Float speed={1.4} rotationIntensity={1.2} floatIntensity={2}>
-    <mesh castShadow>
-      <icosahedronGeometry args={[1.6, 64]} />
-      <MeshDistortMaterial
-        color="#7cf9ff"
-        speed={2.5}
-        distort={0.4}
-        emissive="#00b3ff"
-        emissiveIntensity={0.8}
-        roughness={0.25}
-        metalness={0.15}
-      />
-    </mesh>
-  </Float>
-)
+// Максимально упрощенная геометрия для максимальной производительности
+const FloatingOrb = memo(() => {
+  const performanceMode = useMemo(() => {
+    // Определяем производительность устройства
+    const isLowEnd = navigator.hardwareConcurrency <= 4 || 
+                     (navigator.deviceMemory && navigator.deviceMemory <= 4)
+    return isLowEnd
+  }, [])
 
-const HaloParticles = () => {
-  const [particles] = useState(() =>
-    Array.from({ length: 90 }, () => ({
+  if (performanceMode) {
+    // Минимальная версия для слабых устройств
+    return (
+      <Float speed={1.2} rotationIntensity={0.8} floatIntensity={1.5}>
+        <mesh>
+          <octahedronGeometry args={[1.4, 0]} />
+          <meshBasicMaterial color="#7cf9ff" transparent opacity={0.8} />
+        </mesh>
+      </Float>
+    )
+  }
+
+  return (
+    <Float speed={1.4} rotationIntensity={1.2} floatIntensity={2}>
+      <mesh>
+        <icosahedronGeometry args={[1.6, 16]} />
+        <MeshDistortMaterial
+          color="#7cf9ff"
+          speed={2.5}
+          distort={0.3}
+          emissive="#00b3ff"
+          emissiveIntensity={0.6}
+          roughness={0.3}
+          metalness={0.2}
+        />
+      </mesh>
+    </Float>
+  )
+})
+FloatingOrb.displayName = 'FloatingOrb'
+
+// Максимально упрощенные частицы для максимальной производительности
+const HaloParticles = memo(() => {
+  const particleCount = useMemo(() => {
+    const isLowEnd = navigator.hardwareConcurrency <= 4 || 
+                     (navigator.deviceMemory && navigator.deviceMemory <= 4)
+    return isLowEnd ? 10 : 15
+  }, [])
+
+  const particles = useMemo(() =>
+    Array.from({ length: particleCount }, () => ({
       position: [
         (Math.random() - 0.5) * 6,
         (Math.random() - 0.5) * 4,
         (Math.random() - 0.5) * 4
       ],
-      scale: Math.random() * 0.06 + 0.02
-    }))
+      scale: Math.random() * 0.04 + 0.02
+    })), [particleCount]
   )
 
   return (
     <group>
       {particles.map((particle, index) => (
         <mesh key={index} position={particle.position}>
-          <sphereGeometry args={[particle.scale, 8, 8]} />
-          <meshBasicMaterial color="#9efcff" />
+          <sphereGeometry args={[particle.scale, 3, 3]} />
+          <meshBasicMaterial color="#9efcff" transparent opacity={0.6} />
         </mesh>
       ))}
     </group>
   )
-}
+})
+HaloParticles.displayName = 'HaloParticles'
 
-const SectionTitle = ({ eyebrow, title, description, level = 'h2' }) => {
+const SectionTitle = memo(({ eyebrow, title, description, level = 'h2' }) => {
   const HeadingTag = level
 
   return (
-    <Motion.div
-      className="section-heading"
-      initial={{ opacity: 0, y: 30 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-      viewport={{ once: true, amount: 0.4 }}
-    >
+    <div className="section-heading">
       <p className="eyebrow">{eyebrow}</p>
       <HeadingTag>{title}</HeadingTag>
       {description && <p className="section-description">{description}</p>}
-    </Motion.div>
+    </div>
   )
+})
+SectionTitle.displayName = 'SectionTitle'
+
+// Утилита для throttle с улучшенной плавностью
+const throttle = (func, limit) => {
+  let inThrottle
+  let lastArgs
+  let lastContext
+  return function(...args) {
+    lastArgs = args
+    lastContext = this
+    if (!inThrottle) {
+      func.apply(this, args)
+      inThrottle = true
+      setTimeout(() => {
+        inThrottle = false
+        if (lastArgs) {
+          func.apply(lastContext, lastArgs)
+          lastArgs = null
+          lastContext = null
+        }
+      }, limit)
+    }
+  }
 }
 
 function App() {
-  const [parallax, setParallax] = useState({ x: 0, y: 0 })
   const [formMessage, setFormMessage] = useState('')
-  const stackBadges = [
+  
+  // Мемоизация stackBadges для предотвращения пересоздания массива
+  const stackBadges = useMemo(() => [
     'Tilda Zero Block',
     'SvelteKit',
     'React',
@@ -294,112 +343,56 @@ function App() {
     'Notion',
     'Jira',
     'Jetpack Compose'
-  ]
+  ], [])
 
-  useEffect(() => {
-    const handleMove = (event) => {
-      const x = (event.clientX / window.innerWidth - 0.5) * 30
-      const y = (event.clientY / window.innerHeight - 0.5) * 30
-      setParallax({ x, y })
-    }
+  // Parallax полностью отключен для максимальной производительности
+  // useEffect(() => {}, [])
 
-    window.addEventListener('pointermove', handleMove)
-    return () => window.removeEventListener('pointermove', handleMove)
-  }, [])
+  // Все scroll обработчики отключены для максимальной производительности
+  // useEffect(() => {}, [])
 
-  useEffect(() => {
-    const sections = Array.from(document.querySelectorAll('.parallax-section'))
-    let isScrolling = false
-    let scrollTimeout = null
-
-    const handleParallax = () => {
-      sections.forEach((section) => {
-        const rect = section.getBoundingClientRect()
-        const distance = rect.top + rect.height / 2 - window.innerHeight / 2
-        const normalized = Math.max(Math.min(distance / window.innerHeight, 1), -1)
-        section.style.setProperty('--parallax-offset', normalized.toString())
-      })
-    }
-
-    const smoothScrollTo = (targetElement, duration = 2500) => {
-      const targetPosition = targetElement.getBoundingClientRect().top + window.scrollY
-      const startPosition = window.scrollY
-      const distance = targetPosition - startPosition
-      let startTime = null
-
-      // Максимально плавная функция easing - ease-in-out-sine (самая плавная)
-      const easeInOutSine = (t) => {
-        return -(Math.cos(Math.PI * t) - 1) / 2
-      }
-
-      const animation = (currentTime) => {
-        if (startTime === null) startTime = currentTime
-        const timeElapsed = currentTime - startTime
-        const progress = Math.min(timeElapsed / duration, 1)
-        const ease = easeInOutSine(progress)
-
-        window.scrollTo({
-          top: startPosition + distance * ease,
-          behavior: 'auto' // Используем нашу кастомную анимацию
-        })
-
-        if (progress < 1) {
-          requestAnimationFrame(animation)
-        }
-      }
-
-      requestAnimationFrame(animation)
-    }
-
-    const handleAutoScroll = () => {
-      if (isScrolling) return
-
-      const windowHeight = window.innerHeight
-      const scrollThreshold = windowHeight * 0.1 // 10% экрана - очень чувствительный порог для раннего срабатывания
-
-      sections.forEach((section) => {
-        const rect = section.getBoundingClientRect()
-        const sectionTopInViewport = rect.top
-        const sectionBottomInViewport = rect.bottom
-
-        // Если следующая секция начала появляться внизу экрана (больше 10% видно)
-        if (sectionTopInViewport < windowHeight && sectionTopInViewport > -scrollThreshold && sectionBottomInViewport > scrollThreshold) {
-          isScrolling = true
-          smoothScrollTo(section, 2500) // Максимальная плавность - 2.5 секунды
-          clearTimeout(scrollTimeout)
-          scrollTimeout = setTimeout(() => {
-            isScrolling = false
-          }, 2800) // Увеличен timeout для завершения анимации
-          return // Обрабатываем только одну секцию за раз
-        }
-      })
-    }
-
-    handleParallax()
-    window.addEventListener('scroll', () => {
-      handleParallax()
-      handleAutoScroll()
-    }, { passive: true })
-    window.addEventListener('resize', handleParallax)
+  // Мемоизация обработчиков для предотвращения пересоздания функций
+  const handleScrollToSection = useCallback((id) => {
+    const element = document.getElementById(id)
+    if (!element) return
     
-    return () => {
-      window.removeEventListener('scroll', handleParallax)
-      window.removeEventListener('resize', handleParallax)
-      clearTimeout(scrollTimeout)
+    const startPosition = window.scrollY
+    const targetPosition = element.getBoundingClientRect().top + window.scrollY
+    const distance = targetPosition - startPosition
+    const duration = Math.min(Math.abs(distance) * 0.8, 1200) // Максимум 1.2 секунды
+    let startTime = null
+
+    // Улучшенная easing функция для максимальной плавности
+    const easeOutCubic = (t) => {
+      return 1 - Math.pow(1 - t, 3)
     }
+
+    const animation = (currentTime) => {
+      if (startTime === null) startTime = currentTime
+      const timeElapsed = currentTime - startTime
+      const progress = Math.min(timeElapsed / duration, 1)
+      const ease = easeOutCubic(progress)
+
+      window.scrollTo({
+        top: startPosition + distance * ease,
+        behavior: 'auto'
+      })
+
+      if (progress < 1) {
+        requestAnimationFrame(animation)
+      }
+    }
+
+    requestAnimationFrame(animation)
   }, [])
 
-  const handleScrollToSection = (id) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
+  const handleScrollToContact = useCallback(() => handleScrollToSection('contact'), [handleScrollToSection])
 
-  const handleScrollToContact = () => handleScrollToSection('contact')
-
-  const handleSubmit = (event) => {
+  const handleSubmit = useCallback((event) => {
     event.preventDefault()
     setFormMessage('Форма отправлена. Я свяжусь в течение дня.')
     event.currentTarget.reset()
-  }
+  }, [])
 
   return (
     <div className="app">
@@ -428,32 +421,37 @@ function App() {
       <main className="snap-container">
       <section className="hero snap-section parallax-section" id="hero">
         <div className="hero-visual" aria-hidden="true">
-          <Canvas camera={{ position: [0, 0, 5], fov: 42 }}>
+          <Canvas 
+            camera={{ position: [0, 0, 5], fov: 42 }}
+            dpr={1}
+            performance={{ min: 0.5 }}
+            frameloop="never"
+            gl={{ 
+              antialias: false,
+              alpha: true,
+              powerPreference: 'high-performance',
+              stencil: false,
+              depth: false,
+              precision: 'lowp',
+              preserveDrawingBuffer: false
+            }}
+          >
             <Suspense fallback={null}>
               <ambientLight intensity={0.6} />
               <directionalLight position={[4, 4, 2]} intensity={1.2} />
               <directionalLight position={[-4, -2, -2]} intensity={0.6} color="#0ff" />
-              <Stars radius={28} depth={40} count={4500} factor={2.6} fade speed={0.7} />
+              <Stars radius={28} depth={40} count={200} factor={2.6} fade speed={0.7} />
               <FloatingOrb />
               <HaloParticles />
-              <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.6} />
             </Suspense>
           </Canvas>
         </div>
-        <div
-          className="hero-glow"
-          style={{ transform: `translate3d(${parallax.x / 4}px, ${parallax.y / 4}px, 0)` }}
-        />
+        <div className="hero-glow" />
         <div className="hero-grid" />
         <span className="hero-ambient ambient-one" />
         <span className="hero-ambient ambient-two" />
         <div className="hero-surface">
-          <Motion.div
-            className="hero-content"
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: 'easeOut' }}
-          >
+          <div className="hero-content">
             <p className="eyebrow">Full-stack digital atelier · Web · Mobile · AI</p>
             <h1>Премиальная разработка сайтов, приложений и Telegram-ботов</h1>
             <p className="subtitle">
@@ -473,41 +471,23 @@ function App() {
               <span>3D motion & micro-interactions</span>
               <span>Data-driven решения</span>
             </div>
-          </Motion.div>
-          <Motion.div
-            className="hero-side"
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15, duration: 0.8 }}
-          >
-            <Motion.ul
-              className="hero-stats"
-              initial="hidden"
-              animate="visible"
-              variants={{ visible: { transition: { staggerChildren: 0.15 } } }}
-            >
+          </div>
+          <div className="hero-side">
+            <ul className="hero-stats">
               {heroStats.map((stat) => (
-                <Motion.li
-                  key={stat.label}
-                  variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                >
+                <li key={stat.label}>
                   <span>{stat.label}</span>
                   <strong>{stat.value}</strong>
                   <p>{stat.detail}</p>
-                </Motion.li>
+                </li>
               ))}
-            </Motion.ul>
-            <Motion.div
-              className="hero-floating-card"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.7 }}
-            >
+            </ul>
+            <div className="hero-floating-card">
               <p>Технологический стек</p>
               <strong>React · SvelteKit · Django · FastAPI · Three.js · Telegram · GA4</strong>
               <span>Полный цикл: стратегия → дизайн → код → DevOps → аналитика</span>
-            </Motion.div>
-          </Motion.div>
+            </div>
+          </div>
         </div>
         <div className="scroll-indicator">
           <span />
@@ -523,27 +503,25 @@ function App() {
         />
         <div className="value-grid">
           {signatureHighlights.map((item) => (
-            <Motion.article
+            <article
               key={item.title}
               className="value-card"
-              whileHover={{ y: -12 }}
-              transition={{ type: 'spring', stiffness: 160, damping: 16 }}
             >
               <div>
                 <p className="eyebrow">{item.metric}</p>
                 <h3>{item.title}</h3>
                 <p>{item.description}</p>
               </div>
-            </Motion.article>
+            </article>
           ))}
         </div>
         <div className="stack-marquee" aria-label="Tech stack">
           <div className="marquee-track">
-            {[...stackBadges, ...stackBadges].map((badge, index) => (
+            {useMemo(() => [...stackBadges, ...stackBadges].map((badge, index) => (
               <span key={`${badge}-${index}`} className="marquee-item">
                 {badge}
               </span>
-            ))}
+            )), [stackBadges])}
           </div>
         </div>
       </section>
@@ -555,30 +533,18 @@ function App() {
           description="9 лет развиваю цифровые продукты: от лендингов и SaaS до RAG-ботов и мобильных приложений. Беру ответственность за Core Web Vitals, SEO и бизнес-метрики."
         />
         <div className="about-grid">
-          <Motion.div
-            className="about-card"
-            whileHover={{ y: -10 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          >
+          <div className="about-card">
             <h3>Фокус</h3>
-            <p>Signature-лендинги, продуктовые сервисы, мобильные клиенты, Telegram-боты, AI-ассистенты и инфраструктура под них с Core Web Vitals 90+.</p>
-          </Motion.div>
-          <Motion.div
-            className="about-card"
-            whileHover={{ y: -10 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          >
+            <p>Signature-лендинги, продуктовые сервисы, мобильные клиенты, Telegram-боты, AI-ассистенты и инфраструктура под ними с Core Web Vitals 90+.</p>
+          </div>
+          <div className="about-card">
             <h3>Инструменты</h3>
             <p>Svelte, React, Django, FastAPI, Python, Kotlin, Tilda, Telegram API, OpenAI/Claude, GA4, BigQuery, Docker, Yandex Cloud.</p>
-          </Motion.div>
-          <Motion.div
-            className="about-card"
-            whileHover={{ y: -10 }}
-            transition={{ type: 'spring', stiffness: 200, damping: 20 }}
-          >
+          </div>
+          <div className="about-card">
             <h3>Подход</h3>
             <p>Задаю продуктовый roadmap, подключаю команду заказчика, фиксирую метрики и веду прозрачную коммуникацию в Notion/Jira.</p>
-          </Motion.div>
+          </div>
         </div>
       </section>
 
@@ -590,14 +556,9 @@ function App() {
         />
         <div className="services-grid">
           {services.map((service) => (
-            <Motion.article
+            <article
               key={service.title}
               className="service-card"
-              whileHover={{ y: -8 }}
-              initial={{ opacity: 0, y: 40 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.5 }}
             >
               <div className="card-top">
                 <h3>{service.title}</h3>
@@ -611,7 +572,7 @@ function App() {
               <button className="text-link" onClick={handleScrollToContact}>
                 Узнать подробнее →
               </button>
-            </Motion.article>
+            </article>
           ))}
         </div>
       </section>
@@ -624,12 +585,10 @@ function App() {
           level="h3"
         />
         <div className="portfolio-grid">
-          {portfolio.map((project) => (
-            <Motion.article
+          {portfolio.map((project, index) => (
+            <article
               key={project.title}
               className="portfolio-card"
-              whileHover={{ rotateX: -2, rotateY: 2, y: -6 }}
-              transition={{ type: 'spring', stiffness: 120, damping: 12 }}
             >
               <picture className="portfolio-image">
                 <source type="image/avif" srcSet={project.media.avif} />
@@ -637,9 +596,11 @@ function App() {
                 <img
                   src={project.media.fallback}
                   alt={project.media.alt}
-                  loading="lazy"
+                  loading={index === 0 ? 'eager' : 'lazy'}
+                  decoding="async"
                   width="640"
                   height="360"
+                  fetchpriority={index === 0 ? 'high' : 'low'}
                 />
               </picture>
               <div className="portfolio-info">
@@ -649,7 +610,7 @@ function App() {
                 </div>
                 <span>{project.result}</span>
               </div>
-            </Motion.article>
+            </article>
           ))}
         </div>
       </section>
@@ -672,13 +633,9 @@ function App() {
         />
         <div className="pricing-grid">
           {pricing.map((group) => (
-            <Motion.article
+            <article
               key={group.title}
               className={`pricing-card ${group.accent}`}
-              initial={{ opacity: 0, y: 50 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.3 }}
-              transition={{ duration: 0.6 }}
             >
               <h3>{group.title}</h3>
               <ul>
@@ -689,7 +646,7 @@ function App() {
                   </li>
                 ))}
               </ul>
-            </Motion.article>
+            </article>
           ))}
         </div>
       </section>
@@ -702,20 +659,16 @@ function App() {
         />
         <div className="process-timeline">
           {steps.map((step, index) => (
-            <Motion.div
+            <div
               key={step.title}
               className="process-step"
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.4 }}
-              transition={{ duration: 0.5, delay: index * 0.05 }}
             >
               <span>{index + 1}</span>
               <div>
                 <h4>{step.title}</h4>
                 <p>{step.detail}</p>
               </div>
-            </Motion.div>
+            </div>
           ))}
         </div>
       </section>
@@ -729,7 +682,7 @@ function App() {
         />
         <div className="faq-grid">
           {faq.map((item) => (
-            <details key={item.q} open>
+            <details key={item.q}>
               <summary>{item.q}</summary>
               <p>{item.a}</p>
             </details>
