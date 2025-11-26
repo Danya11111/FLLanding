@@ -208,6 +208,72 @@ if [ "$USE_COMPOSE" = true ]; then
         docker rm -f nginx-proxy 2>/dev/null || true
     fi
     
+    # Проверка и освобождение порта 80
+    log_info "Проверка порта 80..."
+    PORT_80_IN_USE=false
+    PORT_80_PROCESS=""
+    
+    # Проверка через lsof
+    if command -v lsof &> /dev/null; then
+        PORT_80_PROCESS=$(sudo lsof -i :80 -t 2>/dev/null | head -1)
+        if [ -n "$PORT_80_PROCESS" ]; then
+            PORT_80_IN_USE=true
+            PORT_80_PROCESS_NAME=$(ps -p "$PORT_80_PROCESS" -o comm= 2>/dev/null || echo "unknown")
+        fi
+    # Проверка через netstat
+    elif command -v netstat &> /dev/null; then
+        if sudo netstat -tuln 2>/dev/null | grep -q ":80 "; then
+            PORT_80_IN_USE=true
+            PORT_80_PROCESS=$(sudo netstat -tulpn 2>/dev/null | grep ":80 " | awk '{print $7}' | head -1)
+        fi
+    # Проверка через ss
+    elif command -v ss &> /dev/null; then
+        if sudo ss -tuln 2>/dev/null | grep -q ":80 "; then
+            PORT_80_IN_USE=true
+        fi
+    fi
+    
+    # Проверка через Docker (может быть занят другим контейнером)
+    if docker ps --format '{{.Ports}}' | grep -q ":80->" || docker ps --format '{{.Ports}}' | grep -q "0.0.0.0:80"; then
+        PORT_80_IN_USE=true
+        PORT_80_PROCESS="docker-container"
+    fi
+    
+    if [ "$PORT_80_IN_USE" = true ]; then
+        log_warning "Порт 80 занят"
+        
+        # Попытка остановить системный nginx
+        if systemctl is-active --quiet nginx 2>/dev/null; then
+            log_info "Остановка системного nginx..."
+            sudo systemctl stop nginx 2>/dev/null && \
+                log_success "Системный nginx остановлен" || \
+                log_warning "Не удалось остановить системный nginx"
+        fi
+        
+        # Попытка остановить apache (если есть)
+        if systemctl is-active --quiet apache2 2>/dev/null || systemctl is-active --quiet httpd 2>/dev/null; then
+            log_info "Остановка Apache..."
+            sudo systemctl stop apache2 2>/dev/null || sudo systemctl stop httpd 2>/dev/null && \
+                log_success "Apache остановлен" || \
+                log_warning "Не удалось остановить Apache"
+        fi
+        
+        # Проверка еще раз
+        sleep 2
+        if command -v lsof &> /dev/null && sudo lsof -i :80 -t 2>/dev/null | grep -q .; then
+            log_error "Порт 80 все еще занят. Освободите его вручную:"
+            echo "  sudo lsof -i :80"
+            echo "  sudo systemctl stop nginx  # или другой сервис"
+            echo ""
+            echo "Или измените порт в docker-compose.yml на другой (например, 8080)"
+            exit 1
+        else
+            log_success "Порт 80 освобожден"
+        fi
+    else
+        log_success "Порт 80 свободен"
+    fi
+    
     # Сборка образа
     if [ "$SKIP_BUILD" = false ]; then
         log_info "Сборка образов через docker-compose..."
