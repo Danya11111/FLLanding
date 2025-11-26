@@ -22,6 +22,7 @@ PROJECT_DIR="${DEPLOY_DIR:-$(pwd)}"
 SKIP_PULL=false
 SKIP_BUILD=false
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
+USE_COMPOSE=false  # Использовать docker-compose если доступен
 
 # Функция для вывода сообщений
 log_info() {
@@ -59,14 +60,19 @@ while [[ $# -gt 0 ]]; do
             SKIP_BUILD=true
             shift
             ;;
+        --compose)
+            USE_COMPOSE=true
+            shift
+            ;;
         --help)
             echo "Использование: $0 [OPTIONS]"
             echo ""
             echo "Опции:"
             echo "  --branch BRANCH    Ветка для деплоя (по умолчанию: main)"
-            echo "  --port PORT        Порт хоста для проброса (по умолчанию: 80)"
+            echo "  --port PORT        Порт хоста для проброса (по умолчанию: 80, не используется с --compose)"
             echo "  --no-pull          Пропустить обновление из git"
             echo "  --no-build         Пропустить сборку Docker образа"
+            echo "  --compose          Использовать docker-compose для деплоя"
             echo "  --help             Показать эту справку"
             echo ""
             echo "Переменные окружения:"
@@ -111,6 +117,14 @@ fi
 
 cd "$PROJECT_DIR"
 log_info "Рабочая директория: $(pwd)"
+
+# Проверка наличия docker-compose.yml
+if [ -f "docker-compose.yml" ]; then
+    if command -v docker-compose &> /dev/null || docker compose version &> /dev/null; then
+        USE_COMPOSE=true
+        log_info "Обнаружен docker-compose.yml, будет использован docker-compose"
+    fi
+fi
 
 # Проверка наличия Dockerfile
 if [ ! -f "Dockerfile" ]; then
@@ -165,93 +179,173 @@ if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
     fi
 fi
 
-# Остановка и удаление старого контейнера
-if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    log_info "Остановка старого контейнера..."
-    docker stop "$CONTAINER_NAME" > /dev/null 2>&1 || true
-    log_success "Контейнер остановлен"
-fi
-
-if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    log_info "Удаление старого контейнера..."
-    docker rm "$CONTAINER_NAME" > /dev/null 2>&1 || true
-    log_success "Контейнер удален"
-fi
-
-# Сборка Docker образа
-if [ "$SKIP_BUILD" = false ]; then
-    log_info "Сборка Docker образа '$IMAGE_NAME'..."
-    if docker build -t "$IMAGE_NAME" .; then
-        log_success "Образ успешно собран"
+# Деплой через docker-compose
+if [ "$USE_COMPOSE" = true ]; then
+    log_info "Использование docker-compose для деплоя..."
+    
+    # Определение команды docker-compose
+    if docker compose version &> /dev/null; then
+        COMPOSE_CMD="docker compose"
+    elif command -v docker-compose &> /dev/null; then
+        COMPOSE_CMD="docker-compose"
     else
-        log_error "Ошибка при сборке образа"
+        log_error "docker-compose не найден"
         exit 1
     fi
-else
-    log_info "Пропуск сборки образа (--no-build)"
     
-    # Проверка наличия образа
-    if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${IMAGE_NAME}$"; then
-        log_error "Образ '$IMAGE_NAME' не найден. Используйте --no-build только если образ уже собран."
+    # Остановка и удаление старых контейнеров
+    log_info "Остановка старых контейнеров..."
+    $COMPOSE_CMD down 2>/dev/null || true
+    
+    # Сборка образа
+    if [ "$SKIP_BUILD" = false ]; then
+        log_info "Сборка образов через docker-compose..."
+        if $COMPOSE_CMD build fllanding; then
+            log_success "Образы успешно собраны"
+        else
+            log_error "Ошибка при сборке образов"
+            exit 1
+        fi
+    else
+        log_info "Пропуск сборки образов (--no-build)"
+    fi
+    
+    # Запуск контейнеров
+    log_info "Запуск контейнеров через docker-compose..."
+    if $COMPOSE_CMD up -d; then
+        log_success "Контейнеры успешно запущены"
+    else
+        log_error "Ошибка при запуске контейнеров"
         exit 1
     fi
-fi
-
-# Запуск нового контейнера
-log_info "Запуск нового контейнера на порту $PORT..."
-if docker run -d \
-    --name "$CONTAINER_NAME" \
-    -p "${PORT}:80" \
-    --restart unless-stopped \
-    "$IMAGE_NAME"; then
-    log_success "Контейнер успешно запущен"
-else
-    log_error "Ошибка при запуске контейнера"
-    exit 1
-fi
-
-# Ожидание запуска контейнера
-log_info "Ожидание запуска контейнера..."
-sleep 3
-
-# Проверка статуса контейнера
-if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
-    log_success "Контейнер работает"
     
-    # Проверка здоровья приложения
+    # Ожидание запуска контейнеров
+    log_info "Ожидание запуска контейнеров..."
+    sleep 5
+    
+    # Проверка статуса контейнеров
+    log_info "Статус контейнеров:"
+    $COMPOSE_CMD ps
+    
+    # Проверка здоровья приложения через nginx-proxy
     log_info "Проверка здоровья приложения..."
     if command -v curl &> /dev/null; then
-        if curl -f -s "http://localhost:${PORT}" > /dev/null 2>&1; then
-            log_success "Приложение отвечает на http://localhost:${PORT}"
+        if curl -f -s -H "Host: arhipovdan.ru" "http://localhost" > /dev/null 2>&1; then
+            log_success "Приложение отвечает через nginx-proxy"
         else
-            log_warning "Приложение не отвечает на http://localhost:${PORT} (возможно, еще запускается)"
+            log_warning "Приложение не отвечает через nginx-proxy (возможно, еще запускается)"
         fi
     else
         log_warning "curl не установлен, пропускаем проверку здоровья"
     fi
+    
+    # Итоговая информация для docker-compose
+    echo ""
+    log_success "Деплой завершен успешно!"
+    echo ""
+    echo -e "${CYAN}Информация о контейнерах:${NC}"
+    $COMPOSE_CMD ps
+    echo ""
+    echo -e "${CYAN}Полезные команды:${NC}"
+    echo "  Просмотр логов:    $COMPOSE_CMD logs -f fllanding"
+    echo "  Логи nginx:        $COMPOSE_CMD logs -f nginx-proxy"
+    echo "  Остановка:         $COMPOSE_CMD down"
+    echo "  Перезапуск:        $COMPOSE_CMD restart fllanding"
+    echo "  Статус:            $COMPOSE_CMD ps"
+    echo ""
+    echo -e "${GREEN}Сайт доступен по адресу: http://arhipovdan.ru${NC}"
+    echo -e "${GREEN}Также доступен: http://nikitintex.ru${NC}"
+    
 else
-    log_error "Контейнер не запущен"
-    log_info "Логи контейнера:"
-    docker logs "$CONTAINER_NAME" 2>&1 | tail -20
-    exit 1
+    # Старый режим деплоя (без docker-compose)
+    # Остановка и удаление старого контейнера
+    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+        log_info "Остановка старого контейнера..."
+        docker stop "$CONTAINER_NAME" > /dev/null 2>&1 || true
+        log_success "Контейнер остановлен"
+    fi
+
+    if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+        log_info "Удаление старого контейнера..."
+        docker rm "$CONTAINER_NAME" > /dev/null 2>&1 || true
+        log_success "Контейнер удален"
+    fi
+
+    # Сборка Docker образа
+    if [ "$SKIP_BUILD" = false ]; then
+        log_info "Сборка Docker образа '$IMAGE_NAME'..."
+        if docker build -t "$IMAGE_NAME" .; then
+            log_success "Образ успешно собран"
+        else
+            log_error "Ошибка при сборке образа"
+            exit 1
+        fi
+    else
+        log_info "Пропуск сборки образа (--no-build)"
+        
+        # Проверка наличия образа
+        if ! docker images --format '{{.Repository}}:{{.Tag}}' | grep -q "^${IMAGE_NAME}$"; then
+            log_error "Образ '$IMAGE_NAME' не найден. Используйте --no-build только если образ уже собран."
+            exit 1
+        fi
+    fi
+
+    # Запуск нового контейнера
+    log_info "Запуск нового контейнера на порту $PORT..."
+    if docker run -d \
+        --name "$CONTAINER_NAME" \
+        -p "${PORT}:80" \
+        --restart unless-stopped \
+        "$IMAGE_NAME"; then
+        log_success "Контейнер успешно запущен"
+    else
+        log_error "Ошибка при запуске контейнера"
+        exit 1
+    fi
+
+    # Ожидание запуска контейнера
+    log_info "Ожидание запуска контейнера..."
+    sleep 3
+
+    # Проверка статуса контейнера
+    if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+        log_success "Контейнер работает"
+        
+        # Проверка здоровья приложения
+        log_info "Проверка здоровья приложения..."
+        if command -v curl &> /dev/null; then
+            if curl -f -s "http://localhost:${PORT}" > /dev/null 2>&1; then
+                log_success "Приложение отвечает на http://localhost:${PORT}"
+            else
+                log_warning "Приложение не отвечает на http://localhost:${PORT} (возможно, еще запускается)"
+            fi
+        else
+            log_warning "curl не установлен, пропускаем проверку здоровья"
+        fi
+    else
+        log_error "Контейнер не запущен"
+        log_info "Логи контейнера:"
+        docker logs "$CONTAINER_NAME" 2>&1 | tail -20
+        exit 1
+    fi
+    
+    # Итоговая информация для обычного режима
+    echo ""
+    log_success "Деплой завершен успешно!"
+    echo ""
+    echo -e "${CYAN}Информация о контейнере:${NC}"
+    docker ps --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+    echo ""
+    echo -e "${CYAN}Полезные команды:${NC}"
+    echo "  Просмотр логов:    docker logs -f $CONTAINER_NAME"
+    echo "  Остановка:         docker stop $CONTAINER_NAME"
+    echo "  Перезапуск:        docker restart $CONTAINER_NAME"
+    echo "  Статус:            docker ps --filter name=$CONTAINER_NAME"
+    echo ""
+    echo -e "${GREEN}Сайт доступен по адресу: http://localhost:${PORT}${NC}"
 fi
 
 # Очистка старых образов (опционально)
 log_info "Очистка неиспользуемых образов..."
 docker image prune -f > /dev/null 2>&1 || true
-
-# Итоговая информация
-echo ""
-log_success "Деплой завершен успешно!"
-echo ""
-echo -e "${CYAN}Информация о контейнере:${NC}"
-docker ps --filter "name=${CONTAINER_NAME}" --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-echo ""
-echo -e "${CYAN}Полезные команды:${NC}"
-echo "  Просмотр логов:    docker logs -f $CONTAINER_NAME"
-echo "  Остановка:         docker stop $CONTAINER_NAME"
-echo "  Перезапуск:        docker restart $CONTAINER_NAME"
-echo "  Статус:            docker ps --filter name=$CONTAINER_NAME"
-echo ""
-echo -e "${GREEN}Сайт доступен по адресу: http://localhost:${PORT}${NC}"
 

@@ -1,0 +1,61 @@
+version: '3.8'
+
+services:
+  # Nginx Reverse Proxy - принимает все запросы на порту 80
+  nginx-proxy:
+    image: nginx:1.27-alpine
+    container_name: nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"  # Для будущего SSL
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - nginx-logs:/var/log/nginx
+    networks:
+      - web-network
+    depends_on:
+      - fllanding
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Контейнер для arhipovdan.ru (FLLanding)
+  fllanding:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fllanding
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - web-network
+    # Не пробрасываем порт наружу, только для внутренней сети
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Контейнер для nikitintex.ru
+  # Раскомментируйте и настройте под ваш первый сайт
+  # nikitintex:
+  #   image: your-nikitintex-image:latest
+  #   container_name: nikitintex-container
+  #   restart: unless-stopped
+  #   expose:
+  #     - "80"
+  #   networks:
+  #     - web-network
+
+networks:
+  web-network:
+    driver: bridge
+
+volumes:
+  nginx-logs:
+
